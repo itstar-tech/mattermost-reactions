@@ -8,7 +8,6 @@ import (
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/plugin"
 	"github.com/mattermost/mattermost/server/public/pluginapi"
-	"github.com/mattermost/mattermost/server/public/pluginapi/cluster"
 
 	root "github.com/mattermost/mattermost-plugin-demo"
 )
@@ -32,7 +31,4 @@ type Plugin struct {
 
 	// BotId of the created bot account.
 	botID string
-
-	// backgroundJob is a job that executes periodically on only one plugin instance at a time
-	backgroundJob *cluster.Job
 }

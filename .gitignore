@@ -5,3 +5,13 @@ dist
 
 # VSCode
 .vscode
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/.gitignore
+/.idea/aws.xml
+/.idea/ChatHistory_schema_v3.xml
+/.idea/mattermost-reactions.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
+/server/server

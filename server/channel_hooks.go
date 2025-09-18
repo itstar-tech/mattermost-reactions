@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/plugin"
 )
@@ -17,14 +15,7 @@ func (p *Plugin) ChannelHasBeenCreated(c *plugin.Context, channel *model.Channel
 		return
 	}
 
-	msg := fmt.Sprintf("ChannelHasBeenCreated: ~%s", channel.Name)
-	if err := p.postPluginMessage(channel.TeamId, msg); err != nil {
-		p.API.LogError(
-			"Failed to post ChannelHasBeenCreated message",
-			"channel_id", channel.Id,
-			"error", err.Error(),
-		)
-	}
+	p.API.LogDebug("Channel created", "channel_id", channel.Id, "channel_name", channel.Name)
 }
 
 // UserHasJoinedChannel is invoked after the membership has been committed to the database. If
@@ -38,33 +29,24 @@ func (p *Plugin) UserHasJoinedChannel(c *plugin.Context, channelMember *model.Ch
 		return
 	}
 
-	user, err := p.API.GetUser(channelMember.UserId)
-	if err != nil {
-		p.API.LogError(
-			"Failed to query user",
-			"user_id", channelMember.UserId,
-			"error", err.Error(),
-		)
-		return
-	}
+	// Verificar si el usuario que se unió es nuestro bot
+	if channelMember.UserId == p.botID {
+		// Agregar este canal a nuestra lista de canales monitoreados
+		p.addChannelToMonitor(channelMember.ChannelId)
 
-	channel, err := p.API.GetChannel(channelMember.ChannelId)
-	if err != nil {
-		p.API.LogError(
-			"Failed to query channel",
+		channel, err := p.API.GetChannel(channelMember.ChannelId)
+		if err != nil {
+			p.API.LogError(
+				"Failed to query channel when bot joined",
+				"channel_id", channelMember.ChannelId,
+				"error", err.Error(),
+			)
+			return
+		}
+
+		p.API.LogInfo("Bot agregado al canal - comenzando monitoreo",
 			"channel_id", channelMember.ChannelId,
-			"error", err.Error(),
-		)
-		return
-	}
-
-	msg := fmt.Sprintf("UserHasJoinedChannel: @%s, ~%s", user.Username, channel.Name)
-	if err := p.postPluginMessage(channel.TeamId, msg); err != nil {
-		p.API.LogError(
-			"Failed to post UserHasJoinedChannel message",
-			"user_id", channelMember.UserId,
-			"error", err.Error(),
-		)
+			"channel_name", channel.Name)
 	}
 }
 
@@ -80,32 +62,23 @@ func (p *Plugin) UserHasLeftChannel(c *plugin.Context, channelMember *model.Chan
 		return
 	}
 
-	user, err := p.API.GetUser(channelMember.UserId)
-	if err != nil {
-		p.API.LogError(
-			"Failed to query user",
-			"user_id", channelMember.UserId,
-			"error", err.Error(),
-		)
-		return
-	}
+	// Verificar si el usuario que salió es nuestro bot
+	if channelMember.UserId == p.botID {
+		// Remover este canal de nuestra lista de canales monitoreados
+		p.removeChannelFromMonitor(channelMember.ChannelId)
 
-	channel, err := p.API.GetChannel(channelMember.ChannelId)
-	if err != nil {
-		p.API.LogError(
-			"Failed to query channel",
+		channel, err := p.API.GetChannel(channelMember.ChannelId)
+		if err != nil {
+			p.API.LogError(
+				"Failed to query channel when bot left",
+				"channel_id", channelMember.ChannelId,
+				"error", err.Error(),
+			)
+			return
+		}
+
+		p.API.LogInfo("Bot removido del canal - deteniendo monitoreo",
 			"channel_id", channelMember.ChannelId,
-			"error", err.Error(),
-		)
-		return
-	}
-
-	msg := fmt.Sprintf("UserHasLeftChannel: @%s, ~%s", user.Username, channel.Name)
-	if err := p.postPluginMessage(channel.TeamId, msg); err != nil {
-		p.API.LogError(
-			"Failed to post UserHasLeftChannel message",
-			"user_id", channelMember.UserId,
-			"error", err.Error(),
-		)
+			"channel_name", channel.Name)
 	}
 }
