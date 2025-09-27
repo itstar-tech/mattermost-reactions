@@ -1,0 +1,23 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@rules_go//go:def.bzl", "go_library")
+load("@bazel_env.bzl", "bazel_env")
+
+bazel_env(
+    name = "bazel_env",
+    tools = {
+        "buildifier": "@buildifier_prebuilt//:buildifier",
+        "go": "@rules_go//go",
+    },
+)
+
+# gazelle:prefix github.com/itstar-tech/mattermost-reactions
+gazelle(name = "gazelle")
+
+go_library(
+    name = "mattermost-reactions",
+    srcs = ["plugin.go"],
+    embedsrcs = ["plugin.json"],
+    importpath = "github.com/itstar-tech/mattermost-reactions",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_mattermost_mattermost_server_public//model"],
+)

@@ -1,0 +1,95 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+
+go_library(
+    name = "server_lib",
+    srcs = [
+        "activate_hooks.go",
+        "channel_hooks.go",
+        "configuration.go",
+        "http_hooks.go",
+        "main.go",
+        "plugin.go",
+        "reaction_hooks.go",
+    ],
+    importpath = "github.com/itstar-tech/mattermost-reactions/server",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//:mattermost-reactions",
+        "@com_github_gorilla_mux//:mux",
+        "@com_github_mattermost_mattermost_server_public//model",
+        "@com_github_mattermost_mattermost_server_public//plugin",
+        "@com_github_mattermost_mattermost_server_public//pluginapi",
+        "@com_github_pkg_errors//:errors",
+    ],
+)
+
+go_binary(
+    name = "server",
+    embed = [":server_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "server_test",
+    srcs = [
+        "configuration_test.go",
+        "http_hooks_test.go",
+    ],
+    embed = [":server_lib"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
+
+go_binary(
+    name = "plugin-linux-amd64",
+    embed = [":server_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "plugin-linux-arm64",
+    embed = [":server_lib"],
+    goarch = "arm64",
+    goos = "linux",
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "plugin-darwin-amd64",
+    embed = [":server_lib"],
+    goarch = "amd64",
+    goos = "darwin",
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "plugin-darwin-arm64",
+    embed = [":server_lib"],
+    goarch = "arm64",
+    goos = "darwin",
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "plugin-windows-amd64",
+    embed = [":server_lib"],
+    goarch = "amd64",
+    goos = "windows",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "server_binaries",
+    srcs = [
+        ":plugin-darwin-amd64",
+        ":plugin-darwin-arm64",
+        ":plugin-linux-amd64",
+        ":plugin-linux-arm64",
+        ":plugin-windows-amd64",
+    ],
+    visibility = ["//visibility:public"],
+)

@@ -1,6 +1,6 @@
-module github.com/mattermost/mattermost-plugin-demo
+module github.com/itstar-tech/mattermost-reactions
 
-go 1.21
+go 1.24.5
 
 require (
 	github.com/gorilla/mux v1.8.1

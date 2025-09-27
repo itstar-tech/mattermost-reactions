@@ -15,3 +15,7 @@ dist
 /.idea/modules.xml
 /.idea/vcs.xml
 /server/server
+/bazel-bin/
+/bazel-mattermost-reactions/
+/bazel-out/
+/bazel-testlogs/

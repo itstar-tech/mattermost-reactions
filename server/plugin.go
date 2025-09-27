@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/plugin"
 	"github.com/mattermost/mattermost/server/public/pluginapi"
 
-	root "github.com/mattermost/mattermost-plugin-demo"
+	root "github.com/itstar-tech/mattermost-reactions"
 )
 
 var (

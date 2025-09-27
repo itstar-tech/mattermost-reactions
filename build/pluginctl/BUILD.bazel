@@ -1,0 +1,15 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "pluginctl_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/itstar-tech/mattermost-reactions/build/pluginctl",
+    visibility = ["//visibility:private"],
+    deps = ["@com_github_mattermost_mattermost_server_public//model"],
+)
+
+go_binary(
+    name = "pluginctl",
+    embed = [":pluginctl_lib"],
+    visibility = ["//visibility:public"],
+)
