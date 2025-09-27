@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import {FormattedMessage} from 'react-intl';
 
@@ -47,6 +48,238 @@ function getTranslations(locale) {
     }
     return {};
 }
+
+/**
+ * Custom admin setting component to manage a multi-select of Mattermost usernames.
+ * Stores the value as an array of usernames.
+ *
+ * Props:
+ * - id: unique setting key provided by the registry
+ * - value: current value; accepts an array of strings or a string (JSON or comma/newline separated)
+ * - disabled: whether input is disabled
+ * - onChange: function(id, newValue) to propagate changes
+ * - registerSaveAction / unRegisterSaveAction / setSaveNeeded: lifecycle helpers
+ */
+function WhatsAppUsersSetting(props) {
+    const parseValue = (raw) => {
+        if (Array.isArray(raw)) {
+            return raw.filter((v) => typeof v === 'string').map((v) => v.trim()).filter(Boolean);
+        }
+        if (typeof raw === 'string' && raw) {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    return parsed.filter((v) => typeof v === 'string').map((v) => v.trim()).filter(Boolean);
+                }
+            } catch (e) {
+                e && e.message;
+            }
+            return raw.split(/\n|,/).map((v) => v.trim()).filter(Boolean);
+        }
+        return [];
+    };
+
+    const [users, setUsers] = React.useState(parseValue(props.value));
+    const [input, setInput] = React.useState('');
+    const [suggestions, setSuggestions] = React.useState([]);
+    const [loading, setLoading] = React.useState(false);
+    const debounceRef = React.useRef();
+
+    React.useEffect(() => {
+        setUsers(parseValue(props.value));
+    }, [props.value]);
+
+    const propagate = (next) => {
+        setUsers(next);
+        props.onChange(props.id, next);
+        props.setSaveNeeded();
+    };
+
+    const addUser = () => {
+        const name = input.trim().replace(/^@+/, '');
+        if (!name) {
+            return;
+        }
+        if (users.includes(name)) {
+            setInput('');
+            return;
+        }
+        propagate([...users, name]);
+        setInput('');
+        setSuggestions([]);
+    };
+
+    const removeUser = (idx) => {
+        const next = users.filter((_, i) => i !== idx);
+        propagate(next);
+    };
+
+    const onKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addUser();
+        }
+    };
+
+    const searchUsers = async (term) => {
+        const q = term.trim();
+        if (q.length < 2) {
+            setSuggestions([]);
+            return;
+        }
+        try {
+            setLoading(true);
+            const res = await fetch('/api/v4/users/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({term: q}),
+            });
+            if (!res.ok) {
+                setSuggestions([]);
+                setLoading(false);
+                return;
+            }
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : [];
+            const names = list.map((u) => u.username).filter((v) => typeof v === 'string').map((v) => v.trim()).filter((v) => v && !users.includes(v));
+            setSuggestions(names.slice(0, 8));
+        } catch (err) {
+            setSuggestions([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const v = e.target.value;
+        setInput(v);
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+        debounceRef.current = setTimeout(() => searchUsers(v), 200);
+    };
+
+    return (
+        <div style={{padding: '10px 0'}}>
+            <div
+                style={{
+                    display: 'flex',
+                    gap: 8,
+                    alignItems: 'center',
+                    marginBottom: 8,
+                    position: 'relative',
+                    maxWidth: 480,
+                }}
+            >
+                <input
+                    type='text'
+                    value={input}
+                    disabled={props.disabled}
+                    onChange={handleInputChange}
+                    onKeyDown={onKeyDown}
+                    className='form-control'
+                    placeholder='Agregar usuario (sin @) y presiona Enter'
+                    style={{maxWidth: 320}}
+                />
+                <button
+                    type='button'
+                    className='btn btn-primary'
+                    disabled={props.disabled}
+                    onClick={addUser}
+                >
+                    {'Agregar'}
+                </button>
+                {Boolean(suggestions.length) && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 40,
+                            left: 0,
+                            right: 160,
+                            background: '#fff',
+                            border: '1px solid #ddd',
+                            borderRadius: 4,
+                            zIndex: 10,
+                            maxHeight: 220,
+                            overflowY: 'auto',
+                        }}
+                    >
+                        {suggestions.map((s) => (
+                            <div
+                                key={s}
+                                role='button'
+                                tabIndex={0}
+                                onClick={() => {
+                                    if (!users.includes(s)) {
+                                        propagate([...users, s]);
+                                    }
+                                    setInput('');
+                                    setSuggestions([]);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        if (!users.includes(s)) {
+                                            propagate([...users, s]);
+                                        }
+                                        setInput('');
+                                        setSuggestions([]);
+                                    }
+                                }}
+                                style={{
+                                    padding: '6px 10px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <span>{'@'}</span>{s}
+                            </div>
+                        ))}
+                        {loading && (
+                            <div style={{padding: '6px 10px', color: '#888'}}>
+                                {'Buscando...'}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+            <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
+                {users.map((u, idx) => (
+                    <div
+                        key={u}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            background: '#F0F0F0',
+                            borderRadius: 16,
+                            padding: '4px 8px',
+                        }}
+                    >
+                        <span style={{marginRight: 8}}>{u}</span>
+                        <button
+                            type='button'
+                            className='btn btn-link'
+                            style={{padding: 0, color: '#C00'}}
+                            disabled={props.disabled}
+                            onClick={() => removeUser(idx)}
+                        >
+                            {'×'}
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+WhatsAppUsersSetting.propTypes = {
+    id: PropTypes.string.isRequired,
+    value: PropTypes.any,
+    disabled: PropTypes.bool.isRequired,
+    onChange: PropTypes.func.isRequired,
+    setSaveNeeded: PropTypes.func.isRequired,
+};
 
 export default class DemoPlugin {
     initialize(registry, store) {
@@ -205,6 +438,7 @@ export default class DemoPlugin {
 
         registry.registerAdminConsoleCustomSetting('SecretMessage', SecretMessageSetting, {showTitle: true});
         registry.registerAdminConsoleCustomSetting('CustomSetting', CustomSetting);
+        registry.registerAdminConsoleCustomSetting('WhatsAppUsers', WhatsAppUsersSetting, {showTitle: true});
 
         registry.registerFilePreviewComponent((fileInfo) => fileInfo.extension === 'demo', FilePreviewOverride);
 
