@@ -31,6 +31,14 @@
                 "help_text": "URL donde se enviarán las notificaciones de reacciones (debe ser una URL válida que comience con http:// o https://)",
                 "placeholder": "https://example.com/webhook",
                 "default": ""
+            },
+            {
+                "key": "WhatsAppUsers",
+                "display_name": "Usuarios de Mattermost con acceso a WhatsApp",
+                "type": "custom",
+                "help_text": "Selecciona múltiples usuarios de Mattermost que tendrán acceso a las opciones de WhatsApp.",
+                "placeholder": "",
+                "default": ""
             }
         ]
     }
