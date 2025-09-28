@@ -1,1 +1,15 @@
+# Test configuration
+test --test_output=errors
+test --test_summary=short
+
+# Debug configuration
+build:debug --compilation_mode=dbg
+build:debug --strip=never
+
+# Release configuration
+build:release --compilation_mode=opt
+build:release --strip=always
+
+
 common --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+

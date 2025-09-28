@@ -9,6 +9,7 @@ bazel_dep(name = "bazel_env.bzl", version = "0.1.0", dev_dependency = True)
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "aspect_bazel_lib", version = "2.20.0")
 bazel_dep(name = "buildifier_prebuilt", version = "8.2.0.2")
+bazel_dep(name = "rules_pkg", version = "1.0.1")
 
 ### go ###
 
@@ -54,6 +55,7 @@ use_repo(npm, "npm")
 
 bazel_dep(name = "aspect_rules_ts", version = "3.6.0")
 bazel_dep(name = "aspect_rules_swc", version = "2.1.0")
+bazel_dep(name = "aspect_rules_webpack", version = "0.17.1")
 
 rules_ts_ext = use_extension("@aspect_rules_ts//ts:extensions.bzl", "ext", dev_dependency = True)
 rules_ts_ext.deps(

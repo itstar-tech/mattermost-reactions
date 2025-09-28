@@ -2,6 +2,7 @@ load("@aspect_rules_js//js:defs.bzl", "js_library", "js_test")
 load("@aspect_rules_swc//swc:defs.bzl", "swc")
 load("@aspect_rules_ts//ts:defs.bzl", "ts_config", "ts_project")
 load("@bazel_skylib//lib:partial.bzl", "partial")
+load("@aspect_rules_webpack//webpack:defs.bzl", "webpack_bundle")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 
 npm_link_all_packages(name = "node_modules")
@@ -12,12 +13,19 @@ ts_config(
 )
 
 ts_project(
-    name = "webapp_lib",
+    name = "webapp",
     srcs = glob([
         "src/**/*.jsx",
         "src/**/*.ts",
         "src/**/*.tsx",
-    ]),
+    ]) + [
+        "src/action_types.js",
+        "src/actions.js",
+        "src/index.js",
+        "src/manifest.js",
+        "src/reducer.js",
+        "src/selectors.js",
+    ],
     allow_js = True,
     declaration = False,
     no_emit = True,
@@ -44,4 +52,64 @@ ts_project(
         ":node_modules/tslib",
         ":node_modules/typescript",
     ],
+)
+
+genrule(
+    name = "plugin_json_in_src",
+    srcs = ["//:plugin_json_in_bin"],
+    outs = ["src/plugin.json"],
+    cmd = "cp $(location //:plugin_json_in_bin) $@",
+)
+
+js_library(
+    name = "babel_config_lib",
+    srcs = ["babel.config.js"],
+    deps = [
+        "//:node_modules/@babel/preset-env",
+        "//:node_modules/@babel/preset-react",
+        "//:node_modules/babel-plugin-typescript-to-proptypes",
+    ],
+)
+
+js_library(
+    name = "webpack_config",
+    srcs = [
+        "webpack.config.js",
+    ],
+    deps = [
+        ":babel_config_lib",
+        "//:node_modules/@babel/parser",
+        "//:node_modules/@babel/plugin-proposal-class-properties",
+        "//:node_modules/@babel/plugin-syntax-dynamic-import",
+        "//:node_modules/@babel/plugin-syntax-jsx",
+        "//:node_modules/@babel/preset-env",
+        "//:node_modules/@babel/preset-react",
+        "//:node_modules/babel-loader",
+        "//:node_modules/babel-plugin-typescript-to-proptypes",
+    ],
+)
+
+webpack_bundle(
+    name = "main",
+    srcs = glob([
+        "src/components/**/*",
+    ]) + [
+        "src/action_types.js",
+        "src/actions.js",
+        "src/manifest.js",
+        "src/plugin.jsx",
+        "src/reducer.js",
+        "src/selectors.js",
+        ":plugin_json_in_src",
+    ],
+    args = [
+        "--mode=production",
+        "--devtool=inline-source-map",
+    ],
+    # data = [":babel_config_lib"],
+    entry_point = "src/index.js",
+    node_modules = "//:node_modules",
+    output_dir = True,
+    visibility = ["//visibility:public"],
+    webpack_config = ":webpack_config",
 )

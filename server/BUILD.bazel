@@ -83,7 +83,7 @@ go_binary(
 )
 
 filegroup(
-    name = "server_binaries",
+    name = "binaries",
     srcs = [
         ":plugin-darwin-amd64",
         ":plugin-darwin-arm64",
